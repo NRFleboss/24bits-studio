@@ -5,6 +5,12 @@ interface SimpleAudioFeaturesProps {
   file: File;
 }
 
+interface KeyInfo {
+  key: string;
+  scale: string;
+  brightness: number;
+}
+
 export default function SimpleAudioFeatures({ file }: SimpleAudioFeaturesProps) {
   const [features, setFeatures] = useState<any>(null);
   const [loading, setLoading] = useState(false);
