@@ -10,18 +10,20 @@ interface SpectralAnalysisProps {
 export default function SpectralAnalysis({ file }: SpectralAnalysisProps) {
   const [features, setFeatures] = useState<any>(null);
   const [mfcc, setMfcc] = useState<number[]|null>(null);
+  const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (!file) return;
-    const audioCtx: AudioContext;
+    let audioCtx: any;
     setError(null);
     setFeatures(null);
     setMfcc(null);
 
     const processAudio = async () => {
       try {
-        audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtx = new AudioContextCtor();
         const arrayBuffer = await file.arrayBuffer();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
         // Analyse spectrale offline via Meyda sur le buffer
@@ -32,10 +34,10 @@ export default function SpectralAnalysis({ file }: SpectralAnalysisProps) {
         bufferSource.start();
         const channelData = audioBuffer.getChannelData(0);
         const bufferSize = 1024;
-        const featuresArray: unknown[] = [];
+        const featuresArray: any[] = [];
         for (let i = 0; i < channelData.length; i += bufferSize) {
           const frame = channelData.slice(i, i + bufferSize);
-          const feats = Meyda.extract([
+          const feats: any = Meyda.extract([
             "mfcc",
             "spectralCentroid",
             "spectralRolloff",
