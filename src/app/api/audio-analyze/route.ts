@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
     }
   } catch (err: unknown) {
     let errorMsg = "Erreur inconnue";
-    if (err && typeof err === "object" && "message" in err && typeof (err as any).message === "string") {
-      errorMsg = (err as any).message;
+    if (err && typeof err === "object" && "message" in err && typeof (err as { message?: unknown }).message === "string") {
+      errorMsg = (err as { message: string }).message;
     } else if (typeof err === "string") {
       errorMsg = err;
     }
