@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     headers: { Authorization: `Bearer ${GENIUS_API_TOKEN}` },
   });
   const searchData = await searchRes.json();
-  const hit = searchData.response.hits.find((h: any) =>
+  const hit = searchData.response.hits.find((h: { result: { primary_artist: { name: string }, url: string } }) =>
     h.result.primary_artist.name.toLowerCase().includes(artist.toLowerCase())
   );
   if (!hit) {

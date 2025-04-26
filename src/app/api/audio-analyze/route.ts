@@ -33,7 +33,7 @@ async function getSpotifyTrackInfo(trackUrl: string) {
   const data = await res.json();
   return {
     title: data.name,
-    artist: data.artists.map((a: any) => a.name).join(", "),
+    artist: data.artists.map((a: { name: string }) => a.name).join(", "),
     album: data.album.name,
     duration_ms: data.duration_ms,
     preview_url: data.preview_url,
@@ -78,7 +78,13 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json({ error: "Aucun fichier ou lien fourni." }, { status: 400 });
     }
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Erreur inconnue" }, { status: 500 });
+  } catch (err: unknown) {
+    let errorMsg = "Erreur inconnue";
+    if (err && typeof err === "object" && "message" in err && typeof (err as any).message === "string") {
+      errorMsg = (err as any).message;
+    } else if (typeof err === "string") {
+      errorMsg = err;
+    }
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }
