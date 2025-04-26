@@ -10,17 +10,11 @@ interface SpectralAnalysisProps {
 export default function SpectralAnalysis({ file }: SpectralAnalysisProps) {
   const [features, setFeatures] = useState<any>(null);
   const [mfcc, setMfcc] = useState<number[]|null>(null);
-  const [error, setError] = useState<string|null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
 
   useEffect(() => {
     if (!file) return;
-    let audioUrl: string | null = null;
-    let audioCtx: AudioContext;
-    let source: AudioBufferSourceNode;
-    let scriptNode: ScriptProcessorNode;
-    let isUnmounted = false;
+    const audioCtx: AudioContext;
     setError(null);
     setFeatures(null);
     setMfcc(null);
@@ -38,7 +32,7 @@ export default function SpectralAnalysis({ file }: SpectralAnalysisProps) {
         bufferSource.start();
         const channelData = audioBuffer.getChannelData(0);
         const bufferSize = 1024;
-        const featuresArray: any[] = [];
+        const featuresArray: unknown[] = [];
         for (let i = 0; i < channelData.length; i += bufferSize) {
           const frame = channelData.slice(i, i + bufferSize);
           const feats = Meyda.extract([
@@ -70,10 +64,8 @@ export default function SpectralAnalysis({ file }: SpectralAnalysisProps) {
     };
     processAudio();
     return () => {
-      isUnmounted = true;
       if (audioCtx) audioCtx.close();
     };
-    // eslint-disable-next-line
   }, [file]);
 
   function drawSpectrogram(mfccHistory: number[][]) {

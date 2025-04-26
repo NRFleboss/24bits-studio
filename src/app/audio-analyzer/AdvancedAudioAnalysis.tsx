@@ -26,10 +26,9 @@ interface AdvancedFeatures {
 
 // Mapping des valeurs chroma vers les notes
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const SCALES = ['Minor', 'Major'];
 
 // Classification de genre simple basée sur features
-const classifyGenre = (features: any): string => {
+const classifyGenre = (features: AdvancedFeatures): string => {
   const { centroid, energy, brightness, bpm } = features;
   
   // Logique de classification simplifiée
@@ -55,9 +54,7 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [processingStage, setProcessingStage] = useState<string>("");
-  const [spectrogramData, setSpectrogramData] = useState<number[][]>([]);
   
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const spectrogramCanvasRef = useRef<HTMLCanvasElement>(null);
   
   // Analyse avancée
@@ -66,14 +63,10 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
       setProcessingStage("Analyse spectrale de base...");
       // Extraire les données de canal
       const channelData = audioBuffer.getChannelData(0);
-      const sampleRate = audioBuffer.sampleRate;
-      const duration = audioBuffer.duration;
       
       // Features d'analyse communes
       let centroid = 0;
-      let flux = 0;
-      let rolloff = 0;
-      let mfcc: number[] = Array(13).fill(0);
+      const mfcc: number[] = Array(13).fill(0);
       
       // Features avancées
       let chromaValues = Array(12).fill(0);
@@ -91,7 +84,7 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
       const meter = new Tone.Meter();
       
       // Buffer temporaire pour les calculs
-      const tempBuffer = Tone.context.createBuffer(1, frameSize, sampleRate);
+      const tempBuffer = Tone.context.createBuffer(1, frameSize, audioBuffer.sampleRate);
       
       setProcessingStage("Extraction des caractéristiques spectrales...");
       for (let i = 0; i < frames; i++) {
@@ -120,7 +113,7 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
         let highFreqEnergy = 0;
         
         // Chroma (key detection)
-        const binSize = sampleRate / frameSize;
+        const binSize = audioBuffer.sampleRate / frameSize;
         const chromaBins = Array(12).fill(0);
         
         for (let j = 0; j < spectrum.length; j++) {
@@ -181,8 +174,8 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
       let bpm = null;
       try {
         // Méthode d'auto-corrélation pour BPM detection
-        const beats = await detectBeats(channelData, sampleRate);
-        bpm = calculateBPM(beats, sampleRate, duration);
+        const beats = await detectBeats(channelData, audioBuffer.sampleRate);
+        bpm = calculateBPM(beats, audioBuffer.sampleRate, audioBuffer.duration);
       } catch (err) {
         console.warn("BPM detection failed:", err);
       }
@@ -196,9 +189,6 @@ export default function AdvancedAudioAnalysis({ file }: AdvancedAudioAnalysisPro
         bpm
       };
       const genre = classifyGenre(genreFeatures);
-      
-      // Stockage spectrogramme
-      setSpectrogramData(spectrogramFrames);
       
       // Dessiner spectrogramme
       drawSpectrogram(spectrogramFrames);

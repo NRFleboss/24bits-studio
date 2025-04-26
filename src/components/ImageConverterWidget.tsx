@@ -166,7 +166,7 @@ export default function ImageConverterWidget() {
           
           <div className="bg-black/40 p-3 rounded-lg mb-3">
             <div className="relative w-full overflow-hidden rounded-lg" style={{ height: '180px' }}>
-              <img 
+              <Image 
                 src={imageUrl} 
                 alt="Preview" 
                 className="absolute inset-0 w-full h-full object-contain"

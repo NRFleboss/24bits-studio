@@ -82,7 +82,7 @@ export default function AudioConverterPage() {
           inputRef.current.value = ""; // Réinitialiser l'input file natif
         }
       }
-    } catch (e) {
+    } catch {
       setInfo("Erreur de connexion ou de conversion.");
       setIsError(true);
     }

@@ -20,14 +20,13 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
 
   // Fonction pour calculer les features spectrales basiques sans dépendance
   const calculateFeatures = async (audioBuffer: AudioBuffer): Promise<FeatureSet> => {
-    const channelData = audioBuffer.getChannelData(0);
     const fftSize = 2048;
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = fftSize;
     
     // Créer un noeud source temporaire
-    const source = audioCtx.createBufferSource();
+    const source: AudioBufferSourceNode = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(analyser);
     
@@ -38,7 +37,6 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
     // Calculer les features spectrales de base
     let sum = 0;
     let weightedSum = 0;
-    let prevMagnitudes = new Array(frequencyData.length).fill(0);
     let flux = 0;
     
     // Pour le spectral rolloff (seuil d'énergie à 85%)
@@ -48,7 +46,7 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
     
     // MFCC approximé (version simple sans DCT complet)
     const mfccBands = 13;
-    const mfcc = new Array(mfccBands).fill(0);
+    const mfcc: number[] = new Array(mfccBands).fill(0);
     
     for (let i = 0; i < frequencyData.length; i++) {
       const value = frequencyData[i];
@@ -58,7 +56,7 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
       sum += value;
       
       // Flux: différence avec frame précédent
-      flux += Math.abs(value - prevMagnitudes[i]);
+      flux += Math.abs(value);
       
       // Rolloff: seuil d'énergie cumulée
       energySum += value;
@@ -126,6 +124,7 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
     
     const analyzeAudio = async () => {
       try {
+        const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const reader = new FileReader();
         

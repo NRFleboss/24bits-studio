@@ -47,7 +47,7 @@ export default function SimpleAudioFeatures({ file }: SimpleAudioFeaturesProps) 
             zcr = zcr / channelData.length;
             
             // Détection du BPM (simplifié)
-            let bpm = estimateBPM(channelData, audioBuffer.sampleRate);
+            const bpm = estimateBPM(channelData, audioBuffer.sampleRate);
             
             // Détection simple de la tonalité majeure/mineure
             const keyInfo = estimateKey(channelData, audioBuffer.sampleRate);
@@ -108,7 +108,7 @@ export default function SimpleAudioFeatures({ file }: SimpleAudioFeaturesProps) 
     // Pour chaque bin de fréquence, mesurons l'énergie
     for (let i = 0; i < bufferLength; i++) {
       const freq = i * sampleRate / fftSize;
-      const period = 1 / freq;
+      const correlation = 1 / freq;
       let sum = 0;
       
       // Cherche la corrélation pour cette fréquence
@@ -202,7 +202,7 @@ export default function SimpleAudioFeatures({ file }: SimpleAudioFeaturesProps) 
     }
   };
   
-  const estimateKey = (channelData: Float32Array, sampleRate: number) => {
+  const estimateKey = (channelData: Float32Array, sampleRate: number): KeyInfo => {
     try {
       // Notes (chroma)
       const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];

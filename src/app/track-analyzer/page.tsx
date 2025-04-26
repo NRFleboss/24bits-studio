@@ -9,7 +9,7 @@ export default function TrackAnalyzerPage() {
       </p>
       {/* UI pour coller un lien et afficher l'analyse à venir */}
       <div className="rounded-lg border border-emerald-600 bg-emerald-800 p-8 shadow-lg">
-        <span className="text-emerald-200">Fonctionnalité à venir</span>
+        <span>C&apos;est l&apos;analyseur de piste de 24bits Studio - l&apos;outil d&apos;analyse audio avancée.</span>
       </div>
     </main>
   );

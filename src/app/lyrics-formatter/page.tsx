@@ -9,7 +9,8 @@ export default function LyricsFormatterPage() {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (_e: unknown) => {
+    const e: React.FormEvent = _e as React.FormEvent;
     e.preventDefault();
     if (!artist || !title || !lyricsBy || !lyrics) {
       setInfo("Merci de remplir tous les champs.");
@@ -31,7 +32,7 @@ export default function LyricsFormatterPage() {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         // Nom du fichier PDF personnalisé
-        let outName = `${artist} - ${title} (lyrics).pdf`;
+        const outName = `${artist} - ${title} (lyrics).pdf`;
         const a = document.createElement("a");
         a.href = url;
         a.download = outName;

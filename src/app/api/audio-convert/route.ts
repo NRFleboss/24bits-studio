@@ -33,7 +33,11 @@ export async function POST(req: NextRequest) {
       const ffmpeg = spawn("ffmpeg", ffmpegArgs);
       ffmpeg.on("error", reject);
       ffmpeg.on("close", (code) => {
-        code === 0 ? resolve(null) : reject(new Error("ffmpeg failed"));
+        if (code === 0) {
+          resolve(null);
+        } else {
+          reject(new Error("ffmpeg failed"));
+        }
       });
     });
     const outBuffer = await fs.readFile(outputPath);

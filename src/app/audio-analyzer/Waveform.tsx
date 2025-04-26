@@ -10,9 +10,9 @@ export default function Waveform({ file }: WaveformProps) {
 
   useEffect(() => {
     if (!file) return;
-    const reader = new FileReader();
+    const reader: FileReader = new FileReader();
     reader.onload = async (e) => {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
       const arrayBuffer = e.target?.result as ArrayBuffer;
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const rawData = audioBuffer.getChannelData(0);
