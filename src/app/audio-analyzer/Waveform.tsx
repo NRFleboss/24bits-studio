@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from 'react';
 
 interface WaveformProps {
   file: File;
@@ -12,7 +12,9 @@ export default function Waveform({ file }: WaveformProps) {
     if (!file) return;
     const reader: FileReader = new FileReader();
     reader.onload = async (e) => {
-      const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
+      // Instantiate AudioContext with fallback
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextCtor();
       const arrayBuffer = e.target?.result as ArrayBuffer;
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const rawData = audioBuffer.getChannelData(0);
