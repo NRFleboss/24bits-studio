@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const { width, height } = page.getSize();
 
   // Fonts
-  const fontTitle = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
   const fontText = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   // Styles

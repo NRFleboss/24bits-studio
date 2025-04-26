@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         "Content-Disposition": `attachment; filename=converted.wav`,
       },
     });
-  } catch (e) {
+  } catch {
     await fs.unlink(inputPath).catch(() => {});
     await fs.unlink(outputPath).catch(() => {});
     return NextResponse.json({ error: "Erreur lors de la conversion." }, { status: 500 });
