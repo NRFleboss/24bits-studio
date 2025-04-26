@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { ImageIcon } from "@/components/icons";
+import Image from 'next/image';
 
 export default function ImageConverterWidget() {
   const [file, setFile] = useState<File | null>(null);
@@ -166,10 +167,11 @@ export default function ImageConverterWidget() {
           
           <div className="bg-black/40 p-3 rounded-lg mb-3">
             <div className="relative w-full overflow-hidden rounded-lg" style={{ height: '180px' }}>
-              <Image 
-                src={imageUrl} 
-                alt="Preview" 
-                className="absolute inset-0 w-full h-full object-contain"
+              <Image
+                src={imageUrl!}
+                alt="Preview"
+                fill
+                className="object-contain"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                 <p className="text-white text-sm truncate">{file?.name}</p>
