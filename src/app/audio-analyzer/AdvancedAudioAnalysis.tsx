@@ -28,21 +28,21 @@ interface AdvancedFeatures {
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Classification de genre simple basée sur features
-const classifyGenre = (features: AdvancedFeatures): string => {
+const classifyGenre = (features: Pick<AdvancedFeatures, 'centroid' | 'energy' | 'brightness' | 'bpm'>): string => {
   const { centroid, energy, brightness, bpm } = features;
   
   // Logique de classification simplifiée
-  if (energy > 0.8 && brightness > 0.7 && bpm > 125) {
+  if (bpm !== null && energy > 0.8 && brightness > 0.7 && bpm > 125) {
     return "Électronique / Dance";
   } else if (centroid < 2000 && energy < 0.5) {
     return "Ambiant / Downtempo";
   } else if (energy > 0.7 && centroid > 5000) {
     return "Rock / Metal";
-  } else if (bpm < 100 && centroid < 3000) {
+  } else if (bpm !== null && bpm < 100 && centroid < 3000) {
     return "Jazz / Soul";
-  } else if (bpm > 85 && bpm < 105 && energy > 0.6) {
+  } else if (bpm !== null && bpm > 85 && bpm < 105 && energy > 0.6) {
     return "Pop";
-  } else if (bpm > 85 && bpm < 100 && energy < 0.5) {
+  } else if (bpm !== null && bpm > 85 && bpm < 100 && energy < 0.5) {
     return "Hip-hop / Rap";
   }
   
