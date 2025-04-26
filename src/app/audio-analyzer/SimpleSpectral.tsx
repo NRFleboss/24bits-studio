@@ -21,7 +21,9 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
   // Fonction pour calculer les features spectrales basiques sans dépendance
   const calculateFeatures = async (audioBuffer: AudioBuffer): Promise<FeatureSet> => {
     const fftSize = 2048;
-    const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
+    // Instantiate AudioContext with fallback for older browsers
+    const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+    const audioCtx = new AudioContextCtor();
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = fftSize;
     
@@ -124,8 +126,9 @@ export default function SimpleSpectral({ file }: SimpleSpectralProps) {
     
     const analyzeAudio = async () => {
       try {
-        const audioCtx = new (window.AudioContext || (window as typeof globalThis).webkitAudioContext)();
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Instantiate AudioContext once using fallback
+        const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+        const audioCtx = new AudioContextCtor();
         const reader = new FileReader();
         
         reader.onload = async (e) => {
