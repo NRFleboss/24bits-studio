@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@tensorflow/tfjs": "^4.22.0",
     "jimp": "^0.22.8",
     "music-metadata": "^11.2.0",

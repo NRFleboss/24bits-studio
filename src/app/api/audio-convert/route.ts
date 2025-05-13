@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-import { spawn } from "child_process";
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
-export const runtime = "nodejs";
+export const runtime = "edge"; // WASM compatible
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -12,48 +10,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Aucun fichier reçu." }, { status: 400 });
   }
 
-  // Save temp input
   const inputBuffer = Buffer.from(await file.arrayBuffer());
-  const tempDir = "/tmp";
-  const inputPath = path.join(tempDir, `input-${Date.now()}`);
-  const outputPath = path.join(tempDir, `output-${Date.now()}.wav`);
-  await fs.writeFile(inputPath, inputBuffer);
+  const fileExt = file.name.split('.').pop() || 'input';
+  const inputName = `input.${fileExt}`;
+  const outputName = `output.wav`;
 
-  // ffmpeg args: convert to wav, 24bits, 44.1kHz
-  const ffmpegArgs = [
-    "-y",
-    "-i", inputPath,
-    "-ar", "44100",
-    "-acodec", "pcm_s24le",
-    outputPath
-  ];
-
-  try {
-    await new Promise((resolve, reject) => {
-      const ffmpeg = spawn("ffmpeg", ffmpegArgs);
-      ffmpeg.on("error", reject);
-      ffmpeg.on("close", (code) => {
-        if (code === 0) {
-          resolve(null);
-        } else {
-          reject(new Error("ffmpeg failed"));
-        }
-      });
-    });
-    const outBuffer = await fs.readFile(outputPath);
-    // Clean up
-    await fs.unlink(inputPath);
-    await fs.unlink(outputPath);
-    return new NextResponse(outBuffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/wav",
-        "Content-Disposition": `attachment; filename=converted.wav`,
-      },
-    });
-  } catch {
-    await fs.unlink(inputPath).catch(() => {});
-    await fs.unlink(outputPath).catch(() => {});
-    return NextResponse.json({ error: "Erreur lors de la conversion." }, { status: 500 });
+  const ffmpeg = createFFmpeg({ log: false });
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
   }
+
+  await ffmpeg.FS('writeFile', inputName, new Uint8Array(inputBuffer));
+  // Convert to wav 24bits, 44.1kHz
+  await ffmpeg.run(
+    '-i', inputName,
+    '-ar', '44100',
+    '-acodec', 'pcm_s24le',
+    outputName
+  );
+  const outBuffer = ffmpeg.FS('readFile', outputName);
+
+  // Clean up (optionnel, car en mémoire)
+  ffmpeg.FS('unlink', inputName);
+  ffmpeg.FS('unlink', outputName);
+
+  return new NextResponse(Buffer.from(outBuffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/wav",
+      "Content-Disposition": `attachment; filename=converted.wav`,
+    },
+  });
 }

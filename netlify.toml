@@ -1,0 +1,7 @@
+# Netlify configuration for deployment
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  directory = ".netlify/functions"
