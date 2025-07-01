@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Image from 'next/image';
+
 
 export default function ImageConverterWidget() {
   const [file, setFile] = useState<File | null>(null);
@@ -104,7 +104,7 @@ export default function ImageConverterWidget() {
   };
 
   return (
-    <div className="p-8">
+    <div className="px-10 py-12">
       {/* Title */}
       <h2 className="text-lg font-light text-white mb-8 text-center">
         Resize
@@ -179,19 +179,7 @@ export default function ImageConverterWidget() {
         </div>
       )}
 
-      {/* Image Preview */}
-      {imageUrl && !loading && (
-        <div className="mt-8 pt-8 border-t border-gray-900">
-          <div className="relative w-full h-32 opacity-60 hover:opacity-100 transition-opacity">
-            <Image
-              src={imageUrl}
-              alt="Preview"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -133,9 +133,9 @@ async function getPlaylistInfo(playlistUrl: string) {
     });
     
     if (!res.ok) {
-      console.log("Spotify API returned error, using demo data");
-      // Return demo data when API fails
-      return DEMO_PLAYLIST;
+      const errorText = await res.text();
+      console.error("Spotify playlist error:", res.status, errorText);
+      throw new Error(`Failed to fetch playlist: ${res.status}`);
     }
     
     const data = await res.json();
@@ -159,9 +159,14 @@ async function getPlaylistInfo(playlistUrl: string) {
       platform: "spotify"
     };
   } catch (error) {
-    console.log("Using demo data due to error:", error);
-    // Return demo data when there's any error
-    return DEMO_PLAYLIST;
+    console.error("Spotify API error:", error);
+    // Only return demo data if it's a specific error type we want to handle
+    if (error instanceof Error && error.message.includes("credentials not configured")) {
+      console.log("Using demo data due to missing credentials");
+      return DEMO_PLAYLIST;
+    }
+    // For other errors, propagate them
+    throw error;
   }
 }
 
@@ -484,16 +489,24 @@ export async function POST(req: NextRequest) {
     const platform = detectPlatform(playlist_url);
     
     let playlistInfo;
-    if (platform === 'spotify') {
-      playlistInfo = await getPlaylistInfo(playlist_url);
-    } else if (platform === 'deezer') {
-      playlistInfo = await getDeezerPlaylistInfo(playlist_url);
-    } else if (platform === 'apple') {
-      playlistInfo = await getApplePlaylistInfo(playlist_url);
-    } else if (platform === 'amazon') {
-      playlistInfo = await getAmazonPlaylistInfo(playlist_url);
-    } else {
-      return NextResponse.json({ error: "Unsupported platform" }, { status: 400 });
+    try {
+      if (platform === 'spotify') {
+        playlistInfo = await getPlaylistInfo(playlist_url);
+      } else if (platform === 'deezer') {
+        playlistInfo = await getDeezerPlaylistInfo(playlist_url);
+      } else if (platform === 'apple') {
+        playlistInfo = await getApplePlaylistInfo(playlist_url);
+      } else if (platform === 'amazon') {
+        playlistInfo = await getAmazonPlaylistInfo(playlist_url);
+      } else {
+        return NextResponse.json({ error: "Unsupported platform" }, { status: 400 });
+      }
+    } catch (error) {
+      // If we get an error from the specific platform handler, return the appropriate error
+      console.error(`${platform} API error:`, error);
+      return NextResponse.json({ 
+        error: error instanceof Error ? error.message : `Failed to fetch ${platform} playlist` 
+      }, { status: 500 });
     }
     
     if (!playlistInfo.image) {

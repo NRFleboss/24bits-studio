@@ -131,7 +131,7 @@ export default function AudioConverterWidget() {
   };
 
   return (
-    <div className="p-8">
+    <div className="px-10 py-12">
       {/* Title */}
       <h2 className="text-lg font-light text-white mb-8 text-center">
         Convert
@@ -234,16 +234,7 @@ export default function AudioConverterWidget() {
         </div>
       )}
 
-      {/* Audio Preview */}
-      {audioUrl && !loading && (
-        <div className="mt-8 pt-8 border-t border-gray-900">
-          <audio 
-            src={audioUrl} 
-            controls 
-            className="w-full opacity-60 hover:opacity-100 transition-opacity" 
-          />
-        </div>
-      )}
+
     </div>
   );
 }

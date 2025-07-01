@@ -128,7 +128,7 @@ export default function SpotifyPlaylistWidget() {
   };
 
   return (
-    <div className="p-8">
+    <div className="px-10 py-12">
       {/* Title */}
       <h2 className="text-lg font-light text-white mb-8 text-center">
         Playlist Artwork
