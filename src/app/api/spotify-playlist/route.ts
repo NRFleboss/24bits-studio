@@ -135,7 +135,16 @@ async function getPlaylistInfo(playlistUrl: string) {
     if (!res.ok) {
       const errorText = await res.text();
       console.error("Spotify playlist error:", res.status, errorText);
-      throw new Error(`Failed to fetch playlist: ${res.status}`);
+      
+      if (res.status === 404) {
+        throw new Error("Playlist not found - it might be private, deleted, or region-restricted");
+      } else if (res.status === 401) {
+        throw new Error("Spotify API authentication failed");
+      } else if (res.status === 403) {
+        throw new Error("Access denied - playlist might be private");
+      } else {
+        throw new Error(`Spotify API error: ${res.status}`);
+      }
     }
     
     const data = await res.json();

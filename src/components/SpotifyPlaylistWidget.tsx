@@ -44,7 +44,14 @@ export default function SpotifyPlaylistWidget() {
 
       if (!res.ok) {
         const err = await res.json();
-        setInfo(err.error || "Failed to fetch playlist");
+        let errorMessage = err.error || "Failed to fetch playlist";
+        
+        // Add helpful suggestions for common errors
+        if (errorMessage.includes("not found") || errorMessage.includes("private")) {
+          errorMessage += " - Try a different public playlist";
+        }
+        
+        setInfo(errorMessage);
         setIsError(true);
         setPlaylistInfo(null);
       } else {
@@ -181,6 +188,27 @@ export default function SpotifyPlaylistWidget() {
           </button>
         </div>
       )}
+
+      {/* Demo Buttons */}
+      <div className="mt-6 space-y-2">
+        <p className="text-center text-xs text-gray-600 mb-3">Try these working examples:</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setPlaylistUrl("https://open.spotify.com/playlist/6IKQrtMc4c00YzONcUt7QH")}
+            className="py-2 px-3 border border-gray-800 text-gray-400 text-xs hover:text-white hover:border-gray-700 transition-colors"
+            disabled={loading}
+          >
+            Chill Vibes
+          </button>
+          <button
+            onClick={() => setPlaylistUrl("https://www.deezer.com/fr/playlist/1290316405")}
+            className="py-2 px-3 border border-gray-800 text-gray-400 text-xs hover:text-white hover:border-gray-700 transition-colors"
+            disabled={loading}
+          >
+            Deezer Demo
+          </button>
+        </div>
+      </div>
 
       {/* Status */}
       {info && (
