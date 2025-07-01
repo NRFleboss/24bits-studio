@@ -1,24 +1,26 @@
 "use client";
 import React, { useState } from "react";
-import { FormatterIcon } from "@/components/icons";
 
 export default function LyricsFormatterWidget() {
   const [artist, setArtist] = useState("");
   const [title, setTitle] = useState("");
   const [lyricsBy, setLyricsBy] = useState("");
   const [lyrics, setLyrics] = useState("");
-
   const [info, setInfo] = useState("");
+  const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!artist || !title || !lyricsBy || !lyrics) {
-      setInfo("Merci de remplir tous les champs.");
+      setInfo("Fill all fields");
+      setIsError(true);
       return;
     }
     setLoading(true);
     setInfo("");
+    setIsError(false);
+    
     try {
       const res = await fetch("/api/lyrics-pdf", {
         method: "POST",
@@ -27,7 +29,8 @@ export default function LyricsFormatterWidget() {
       });
       if (!res.ok) {
         const err = await res.json();
-        setInfo("Erreur : " + (err.error || "Génération impossible."));
+        setInfo("Generation failed");
+        setIsError(true);
       } else {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -39,63 +42,87 @@ export default function LyricsFormatterWidget() {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        setInfo("PDF généré !");
+        setInfo("PDF generated");
+        setIsError(false);
       }
     } catch {
-      setInfo("Erreur de connexion ou de génération.");
+      setInfo("Generation failed");
+      setIsError(true);
     }
     setLoading(false);
   };
 
+  const isFormValid = artist && title && lyricsBy && lyrics;
+
   return (
-    <div className="group bg-zinc-900 p-6 rounded-3xl border border-zinc-800 overflow-hidden transition-all duration-300 hover:bg-zinc-800/80 hover:border-accent-500/30">
-      <FormatterIcon className="h-10 w-10 text-white mb-3 mx-auto" />
-      <h3 className="text-xl font-bold tracking-tight text-white text-center mb-4">Lyrics Formatter</h3>
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-          placeholder="Artiste"
-          className="rounded-xl px-4 py-3 bg-zinc-800 text-white border border-zinc-700 focus:outline-none focus:border-accent-400 transition-colors text-sm font-medium"
-        />
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Titre"
-          className="rounded-xl px-4 py-3 bg-zinc-800 text-white border border-zinc-700 focus:outline-none focus:border-accent-400 transition-colors text-sm font-medium"
-        />
+    <div className="p-8">
+      {/* Title */}
+      <h2 className="text-lg font-light text-white mb-8 text-center">
+        Format
+      </h2>
+
+      {/* Form */}
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Artist & Title */}
+        <div className="grid grid-cols-2 gap-4">
+          <input
+            type="text"
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
+            placeholder="Artist"
+            className="py-3 px-0 bg-transparent text-white border-0 border-b border-gray-800 focus:outline-none focus:border-white transition-colors text-sm placeholder-gray-500"
+            disabled={loading}
+          />
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className="py-3 px-0 bg-transparent text-white border-0 border-b border-gray-800 focus:outline-none focus:border-white transition-colors text-sm placeholder-gray-500"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Lyrics By */}
         <input
           type="text"
           value={lyricsBy}
           onChange={(e) => setLyricsBy(e.target.value)}
-          placeholder="Paroles par"
-          className="rounded-xl px-4 py-3 bg-zinc-800 text-white border border-zinc-700 focus:outline-none focus:border-accent-400 transition-colors text-sm font-medium"
-        />
-        <textarea
-          value={lyrics}
-          onChange={(e) => setLyrics(e.target.value)}
-          rows={6}
-          placeholder="Collez vos paroles ici..."
-          className="rounded-xl px-4 py-3 bg-zinc-800 text-white border border-zinc-700 focus:outline-none focus:border-accent-400 transition-colors text-sm font-medium resize-y"
-        />
-        <button
-          type="submit"
+          placeholder="Lyrics by"
+          className="w-full py-3 px-0 bg-transparent text-white border-0 border-b border-gray-800 focus:outline-none focus:border-white transition-colors text-sm placeholder-gray-500"
           disabled={loading}
-          className="w-full py-3 bg-accent-400 hover:bg-accent-500 text-white rounded-full font-semibold tracking-wide transition-all duration-200 mb-2"
-        >
-          {loading ? "Générer..." : "Générer PDF"}
-        </button>
+        />
+
+        {/* Lyrics */}
+        <div className="relative">
+          <textarea
+            value={lyrics}
+            onChange={(e) => setLyrics(e.target.value)}
+            rows={8}
+            placeholder="Paste your lyrics here..."
+            className="w-full py-4 px-0 bg-transparent text-white border border-gray-800 focus:outline-none focus:border-white transition-colors text-sm placeholder-gray-500 resize-none"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Submit Button */}
+        {isFormValid && (
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-white text-black text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:bg-gray-100"
+          >
+            {loading ? "Generating..." : "Generate PDF"}
+          </button>
+        )}
       </form>
-      {loading && (
-        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden mt-3">
-          <div className="h-full bg-accent-300 animate-pulse" style={{ width: "75%" }}></div>
+
+      {/* Status */}
+      {info && (
+        <div className={`mt-4 text-center text-xs ${isError ? 'text-red-400' : 'text-gray-400'}`}>
+          {info}
         </div>
       )}
-      {info && <div className="text-sm text-center mt-2 text-zinc-300">{info}</div>}
-      
-
     </div>
   );
 }

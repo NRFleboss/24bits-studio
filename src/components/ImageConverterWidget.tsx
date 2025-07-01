@@ -1,6 +1,5 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { ImageIcon } from "@/components/icons";
 import Image from 'next/image';
 
 export default function ImageConverterWidget() {
@@ -19,7 +18,6 @@ export default function ImageConverterWidget() {
       setInfo("");
       setIsError(false);
       
-      // Create preview URL for the image
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
       }
@@ -32,10 +30,12 @@ export default function ImageConverterWidget() {
     e.preventDefault();
     setDragActive(true);
   };
+  
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
   };
+  
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
@@ -45,7 +45,6 @@ export default function ImageConverterWidget() {
       setInfo("");
       setIsError(false);
       
-      // Create preview URL for the image
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
       }
@@ -57,7 +56,7 @@ export default function ImageConverterWidget() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setInfo("Merci de sélectionner une image.");
+      setInfo("Select an image");
       setIsError(true);
       return;
     }
@@ -74,7 +73,7 @@ export default function ImageConverterWidget() {
       });
       if (!res.ok) {
         const err = await res.json();
-        setInfo("Erreur : " + (err.error || "Conversion impossible."));
+        setInfo("Conversion failed");
         setIsError(true);
       } else {
         const blob = await res.blob();
@@ -82,7 +81,6 @@ export default function ImageConverterWidget() {
         let outName = file.name.replace(/\.[^/.]+$/, "");
         outName += " (3000x3000).jpeg";
         
-        // Mettre à jour la prévisualisation avec l'image convertie
         if (imageUrl) {
           URL.revokeObjectURL(imageUrl);
         }
@@ -95,28 +93,29 @@ export default function ImageConverterWidget() {
         a.click();
         a.remove();
         
-        setInfo("Image convertie !");
+        setInfo("Resized to 3000×3000");
         setIsError(false);
-        // Ne pas reset pour garder la prévisualisation
-        // setFile(null);
-        // if (inputRef.current) inputRef.current.value = "";
       }
     } catch {
-      setInfo("Erreur de conversion.");
+      setInfo("Conversion failed");
       setIsError(true);
     }
     setLoading(false);
   };
 
-  const infoStyle = isError ? "text-red-400" : "text-green-400";
-
   return (
-    <div className="group bg-zinc-900 p-6 rounded-3xl border border-zinc-800 overflow-hidden transition-all duration-300 hover:bg-zinc-800/80 hover:border-accent-500/30">
-      <ImageIcon className="h-10 w-10 text-white mb-3 mx-auto" />
-      <h3 className="text-xl font-bold tracking-tight text-white text-center mb-4">Image Converter</h3>
+    <div className="p-8">
+      {/* Title */}
+      <h2 className="text-lg font-light text-white mb-8 text-center">
+        Resize
+      </h2>
+
+      {/* Drop Zone */}
       <div
-        className={`p-5 mb-4 border border-dashed rounded-2xl transition-all duration-200 ${
-          dragActive ? "border-accent-400 bg-accent-400/10" : "border-zinc-700 bg-zinc-800/50"
+        className={`border-2 border-dashed py-12 px-8 text-center transition-colors mb-8 ${
+          dragActive
+            ? 'border-white'
+            : 'border-gray-800 hover:border-gray-700'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -130,58 +129,66 @@ export default function ImageConverterWidget() {
           onChange={handleFileChange}
           disabled={loading}
         />
-        <p className="text-zinc-400 text-center mb-3 text-sm">Déposez votre image ici</p>
+        
+        {file ? (
+          <div className="space-y-3">
+            <p className="text-white text-sm">{file.name}</p>
+            <p className="text-gray-500 text-xs">
+              {(file.size / 1024 / 1024).toFixed(1)} MB
+            </p>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-gray-400 hover:text-white text-xs transition-colors"
+              disabled={loading}
+            >
+              Change image
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-gray-400 text-sm">Drop image</p>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-white text-sm hover:text-gray-300 transition-colors"
+              disabled={loading}
+            >
+              Browse
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Convert Button */}
+      {file && (
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={handleSubmit}
           disabled={loading}
-          className="px-4 py-2.5 bg-accent-400 hover:bg-accent-500 text-white text-sm rounded-full transition-all duration-200 font-medium"
+          className="w-full py-4 bg-white text-black text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:bg-gray-100"
         >
-          {file ? file.name : "Choisir une image"}
+          {loading ? "Resizing..." : "Resize to 3000×3000"}
         </button>
-      </div>
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="w-full py-3 bg-accent-400 hover:bg-accent-500 text-white rounded-full font-semibold tracking-wide transition-all duration-200 mb-2"
-      >
-        {loading ? "Conversion..." : "Convertir"}
-      </button>
-      {loading && (
-        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden mt-3">
-          <div
-            className="h-full bg-accent-300 animate-pulse"
-            style={{ width: "75%" }}
-          ></div>
+      )}
+
+      {/* Status */}
+      {info && (
+        <div className={`mt-4 text-center text-xs ${isError ? 'text-red-400' : 'text-gray-400'}`}>
+          {info}
         </div>
       )}
-      {info && <div className={`${infoStyle} text-sm text-center mt-2`}>{info}</div>}
-      
-      {/* Image Preview */}
-      {imageUrl && (
-        <div className="mt-6 p-4 bg-zinc-800/70 rounded-xl border border-zinc-700 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-white text-sm font-medium">Prévisualisation image</p>
-            <span className="text-accent-400 text-xs px-2 py-1 bg-accent-400/10 rounded-full">3000×3000px</span>
-          </div>
-          
-          <div className="bg-black/40 p-3 rounded-lg mb-3">
-            <div className="relative w-full overflow-hidden rounded-lg" style={{ height: '180px' }}>
-              <Image
-                src={imageUrl!}
-                alt="Preview"
-                fill
-                className="object-contain"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                <p className="text-white text-sm truncate">{file?.name}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-xs text-zinc-400 flex justify-between">
 
-            <span></span>
+      {/* Image Preview */}
+      {imageUrl && !loading && (
+        <div className="mt-8 pt-8 border-t border-gray-900">
+          <div className="relative w-full h-32 opacity-60 hover:opacity-100 transition-opacity">
+            <Image
+              src={imageUrl}
+              alt="Preview"
+              fill
+              className="object-contain"
+            />
           </div>
         </div>
       )}

@@ -1,12 +1,15 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Layout from "@/components/Layout"; // Import du Layout
-import { ConverterIcon } from "@/components/icons";
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
+type OutputFormat = 'wav' | 'mp3';
 
 export default function AudioConverterPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [outputFormat, setOutputFormat] = useState<OutputFormat>('wav');
   const [info, setInfo] = useState<string>("");
-  const [isError, setIsError] = useState<boolean>(false); // Pour styliser le message d'info
+  const [isError, setIsError] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +47,7 @@ export default function AudioConverterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setInfo("Merci de sélectionner un fichier audio.");
+      setInfo("Select an audio file");
       setIsError(true);
       return;
     }
@@ -52,127 +55,183 @@ export default function AudioConverterPage() {
     setInfo("");
     setIsError(false);
 
-    const formData = new FormData();
-    formData.append("file", file);
     try {
-      const res = await fetch("/api/audio-convert", {
-        method: "POST",
-        body: formData,
+      const ffmpeg = new FFmpeg();
+      
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        setInfo("Erreur : " + (err.error || "Conversion impossible."));
-        setIsError(true);
+      
+      const inputExt = file.name.split('.').pop() || 'input';
+      const inputName = `input.${inputExt}`;
+      const outputName = `output.${outputFormat}`;
+      
+      await ffmpeg.writeFile(inputName, await fetchFile(file));
+      
+      if (outputFormat === 'wav') {
+        await ffmpeg.exec([
+          '-i', inputName,
+          '-ar', '44100',
+          '-acodec', 'pcm_s24le',
+          outputName
+        ]);
       } else {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        let outName = file.name.replace(/\.[^/.]+$/, "");
-        outName += " (24bits).wav";
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = outName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url); // Nettoyer l'URL blob
-        setInfo("Fichier converti et téléchargé !");
-        setIsError(false);
-        setFile(null); // Réinitialiser après succès
-        if (inputRef.current) {
-          inputRef.current.value = ""; // Réinitialiser l'input file natif
-        }
+        await ffmpeg.exec([
+          '-i', inputName,
+          '-ar', '44100',
+          '-ab', '320k',
+          '-acodec', 'libmp3lame',
+          outputName
+        ]);
       }
-    } catch {
-      setInfo("Erreur de connexion ou de conversion.");
+      
+      const outBuffer = await ffmpeg.readFile(outputName);
+      const mimeType = outputFormat === 'wav' ? 'audio/wav' : 'audio/mpeg';
+      const blob = new Blob([outBuffer], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      
+      let outName = file.name.replace(/\.[^/.]+$/, "");
+      outName += outputFormat === 'wav' ? " (24bit).wav" : " (320k).mp3";
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = outName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      setInfo(`Converted to ${outputFormat.toUpperCase()}`);
+      setIsError(false);
+      setFile(null);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    } catch (err) {
+      console.error('FFmpeg error:', err);
+      setInfo("Conversion failed");
       setIsError(true);
     }
     setLoading(false);
   };
 
-  // Style dynamique pour le message d'info
-  const infoStyle = isError
-    ? "text-red-400"
-    : "text-green-400";
-
   return (
-    <Layout> {/* Utilisation du Layout */}
-      <div
-        className={`flex flex-col items-center animate-in fade-in duration-500 bg-finance-800/50 backdrop-blur-md shadow-glass-lg p-8 rounded-lg w-full max-w-md border-2 ${dragActive ? 'border-accent-400' : 'border-finance-600'}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <ConverterIcon className="h-16 w-16 text-accent-400 mx-auto mb-4" />
-        <div className="text-center mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-finance-50">
+    <main className="min-h-screen bg-black">
+      {/* Minimal header */}
+      <div className="fixed top-0 left-0 right-0 z-50 p-8">
+        <a href="/" className="text-white text-lg font-light hover:text-gray-300 transition-colors">
+          ← 24bits
+        </a>
+      </div>
+
+      {/* Centered content */}
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Title */}
+          <h1 className="text-4xl font-extralight text-white mb-16 text-center tracking-wide">
             Audio Converter
           </h1>
-          <p className="text-base md:text-lg text-finance-300 leading-relaxed max-w-xl">
-            Convertis n'importe quel fichier audio en{" "}
-            <span className="font-semibold text-accent-400">WAV 24bits, 44,1kHz</span>.
-          </p>
-           <p className="mt-2 text-sm text-finance-400 max-w-lg">
-             Idéal pour le studio, le mastering ou l'archivage haute qualité.
-           </p>
-        </div>
 
-        {/* Formulaire avec animation */}
-        <form
-          className="w-full max-w-md flex flex-col items-center gap-5 animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out delay-150"
-          onSubmit={handleSubmit}
-        >
-          <input
-            type="file"
-            accept="audio/*"
-            className="hidden"
-            ref={inputRef}
-            onChange={handleFileChange}
-            disabled={loading}
-          />
-
-          {/* Bouton de sélection de fichier */}
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={loading}
-            className="w-full px-6 py-3 bg-finance-700/50 rounded-lg border border-finance-600 text-finance-100 font-medium shadow-sm hover:bg-finance-600/50 hover:border-finance-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 ease-out focus:ring-2 focus:ring-offset-2 focus:ring-accent-400 text-center truncate"
-          >
-            {file ? `Fichier : ${file.name}` : "Choisir un fichier audio"}
-          </button>
-
-          {/* Bouton de conversion */}
-          <button
-            type="submit"
-            disabled={!file || loading}
-            className="w-full px-8 py-3 bg-accent-500 hover:bg-accent-600 rounded-lg text-white font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out focus:ring-2 focus:ring-offset-2 focus:ring-accent-400 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Conversion...
-              </>
-            ) : (
-              "Convertir en WAV 24bits/44,1kHz"
-            )}
-          </button>
-
-          {/* Barre de progression */}
-          {loading && (
-            <div className="w-full bg-finance-700/50 rounded-full h-2 overflow-hidden mt-4">
-              <div className="h-full bg-accent-400 animate-pulse" style={{ width: '75%' }}></div>
+          {/* Format Toggle */}
+          <div className="mb-12">
+            <div className="flex border border-gray-800 rounded">
+              <button
+                type="button"
+                onClick={() => setOutputFormat('wav')}
+                className={`flex-1 py-4 px-6 text-sm transition-colors ${
+                  outputFormat === 'wav'
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                WAV 24bit
+              </button>
+              <button
+                type="button"
+                onClick={() => setOutputFormat('mp3')}
+                className={`flex-1 py-4 px-6 text-sm transition-colors ${
+                  outputFormat === 'mp3'
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                MP3 320k
+              </button>
             </div>
+          </div>
+
+          {/* Drop Zone */}
+          <div
+            className={`border-2 border-dashed py-20 px-8 text-center transition-colors mb-12 ${
+              dragActive
+                ? 'border-white'
+                : 'border-gray-800 hover:border-gray-700'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              ref={inputRef}
+              onChange={handleFileChange}
+              disabled={loading}
+            />
+            
+            {file ? (
+              <div className="space-y-4">
+                <p className="text-white text-lg">{file.name}</p>
+                <p className="text-gray-500">
+                  {(file.size / 1024 / 1024).toFixed(1)} MB
+                </p>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="text-gray-400 hover:text-white transition-colors"
+                  disabled={loading}
+                >
+                  Change file
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-gray-400 text-lg">Drop your audio file here</p>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="text-white text-lg hover:text-gray-300 transition-colors"
+                  disabled={loading}
+                >
+                  or browse
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Convert Button */}
+          {file && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full py-5 bg-white text-black text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:bg-gray-100"
+            >
+              {loading ? "Converting..." : `Convert to ${outputFormat.toUpperCase()}`}
+            </button>
           )}
-          {/* Message d'information */}
+
+          {/* Status */}
           {info && (
-            <div className={`text-center text-sm mt-2 ${infoStyle} animate-in fade-in duration-300`}>
+            <div className={`mt-6 text-center ${isError ? 'text-red-400' : 'text-gray-400'}`}>
               {info}
             </div>
           )}
-        </form>
+        </div>
       </div>
-    </Layout>
+    </main>
   );
 }
