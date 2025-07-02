@@ -5,50 +5,7 @@ import * as cheerio from 'cheerio';
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
-// Demo data for testing
-const DEMO_PLAYLIST = {
-  name: "Today's Top Hits",
-  description: "The most played songs right now.",
-  image: "https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6",
-  image_hq: "https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6", 
-  tracks_total: 50,
-  owner: "Spotify",
-  spotify_url: "https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd",
-  platform: "spotify"
-};
 
-const DEMO_DEEZER_PLAYLIST = {
-  name: "Top France",
-  description: "Les titres les plus écoutés en France",
-  image: "https://e-cdns-images.dzcdn.net/images/playlist/500x500/000/000/000/000000001.jpg",
-  image_hq: "https://e-cdns-images.dzcdn.net/images/playlist/500x500/000/000/000/000000001.jpg",
-  tracks_total: 100,
-  owner: "Deezer",
-  deezer_url: "https://www.deezer.com/playlist/1",
-  platform: "deezer"
-};
-
-const DEMO_APPLE_PLAYLIST = {
-  name: "Today's Chill",
-  description: "Some of electronic music's most exciting developments",
-  image: "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/12/8c/f5128c0a-8b12-3c85-c6a9-123456789/artwork.jpg/632x632bb.webp",
-  image_hq: "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/12/8c/f5128c0a-8b12-3c85-c6a9-123456789/artwork.jpg/1000x1000bb.webp",
-  tracks_total: 228,
-  owner: "Apple Music",
-  apple_url: "https://music.apple.com/us/playlist/todays-chill/pl.2bb29727dbc34a63936787297305c37c",
-  platform: "apple"
-};
-
-const DEMO_AMAZON_PLAYLIST = {
-  name: "Chill Vibes",
-  description: "Relaxing music for any time",
-  image: "https://m.media-amazon.com/images/S/dmm-catalog-images/playlist/B08FXWQL68/B08FXWQL68._CR0,0,512,512_UX256_UY256_.jpg",
-  image_hq: "https://m.media-amazon.com/images/S/dmm-catalog-images/playlist/B08FXWQL68/B08FXWQL68._CR0,0,1024,1024_.jpg",
-  tracks_total: 50,
-  owner: "Amazon Music",
-  amazon_url: "https://music.amazon.fr/playlists/B08FXWQL68",
-  platform: "amazon"
-};
 
 async function getSpotifyToken() {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
@@ -169,12 +126,6 @@ async function getPlaylistInfo(playlistUrl: string) {
     };
   } catch (error) {
     console.error("Spotify API error:", error);
-    // Only return demo data if it's a specific error type we want to handle
-    if (error instanceof Error && error.message.includes("credentials not configured")) {
-      console.log("Using demo data due to missing credentials");
-      return DEMO_PLAYLIST;
-    }
-    // For other errors, propagate them
     throw error;
   }
 }
@@ -199,8 +150,7 @@ async function getDeezerPlaylistInfo(playlistUrl: string) {
     });
     
     if (!response.ok) {
-      console.log("Failed to fetch Deezer page, using demo data");
-      return DEMO_DEEZER_PLAYLIST;
+      throw new Error(`Failed to fetch Deezer page: ${response.status}`);
     }
     
     const html = await response.text();
@@ -275,8 +225,8 @@ async function getDeezerPlaylistInfo(playlistUrl: string) {
     };
     
   } catch (error) {
-    console.log("Deezer scraping error, using demo data:", error);
-    return DEMO_DEEZER_PLAYLIST;
+    console.error("Deezer scraping error:", error);
+    throw error;
   }
 }
 
@@ -291,8 +241,7 @@ async function getApplePlaylistInfo(playlistUrl: string) {
     });
     
     if (!response.ok) {
-      console.log("Failed to fetch Apple Music page, using demo data");
-      return DEMO_APPLE_PLAYLIST;
+      throw new Error(`Failed to fetch Apple Music page: ${response.status}`);
     }
     
     const html = await response.text();
@@ -362,8 +311,8 @@ async function getApplePlaylistInfo(playlistUrl: string) {
     };
     
   } catch (error) {
-    console.log("Apple Music scraping error, using demo data:", error);
-    return DEMO_APPLE_PLAYLIST;
+    console.error("Apple Music scraping error:", error);
+    throw error;
   }
 }
 
@@ -384,8 +333,7 @@ async function getAmazonPlaylistInfo(playlistUrl: string) {
     });
     
     if (!response.ok) {
-      console.log("Failed to fetch Amazon Music page, using demo data");
-      return DEMO_AMAZON_PLAYLIST;
+      throw new Error(`Failed to fetch Amazon Music page: ${response.status}`);
     }
     
     const html = await response.text();
@@ -462,10 +410,8 @@ async function getAmazonPlaylistInfo(playlistUrl: string) {
       console.log("Enhanced Amazon image URL:", image_hq);
     }
     
-    // If no image found, return demo data
     if (!image) {
-      console.log("No image found for Amazon playlist, using demo data");
-      return DEMO_AMAZON_PLAYLIST;
+      throw new Error("No image found for Amazon playlist");
     }
     
     return {
@@ -480,8 +426,8 @@ async function getAmazonPlaylistInfo(playlistUrl: string) {
     };
     
   } catch (error) {
-    console.log("Amazon Music scraping error, using demo data:", error);
-    return DEMO_AMAZON_PLAYLIST;
+    console.error("Amazon Music scraping error:", error);
+    throw error;
   }
 }
 
@@ -522,10 +468,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No artwork found for this playlist" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      ...playlistInfo,
-      demo: playlistInfo === DEMO_PLAYLIST || playlistInfo === DEMO_DEEZER_PLAYLIST || playlistInfo === DEMO_APPLE_PLAYLIST || playlistInfo === DEMO_AMAZON_PLAYLIST, // Only true if we used demo data
-    });
+    return NextResponse.json(playlistInfo);
   } catch (err: unknown) {
     console.error("API error:", err);
     let errorMsg = "Unknown error";
